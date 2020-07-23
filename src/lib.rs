@@ -1,6 +1,7 @@
 #![deny(missing_docs)]
 //! kvs is a command line key value store
 use std::collections::HashMap;
+use std::path::Path;
 
 /// KvStore struct definition
 #[derive(Default)]
@@ -20,6 +21,11 @@ impl KvStore {
     }
   }
 
+  /// Opens a file for the given path
+  pub fn open(_: &Path) -> Result<KvStore, String> {
+    panic!("unimplemented");
+  }
+
   /// Sets a value for a particular key
   /// # Example
   ///
@@ -27,8 +33,9 @@ impl KvStore {
   /// let store = KvStore::new();
   /// store.set("key1".to_owned(), "value1".to_owned());
   /// ```
-  pub fn set(&mut self, key: String, value: String) {
-    self.store.insert(key, value);
+  pub fn set(&mut self, _: String, _: String) -> Result<String, String> {
+    panic!("unimplemented");
+    // self.store.insert(key, value);
   }
 
   /// Gets a value for a particular key.
@@ -40,8 +47,9 @@ impl KvStore {
   /// store.set("key1".to_owned(), "value1".to_owned());
   /// store.get("key1".to_owned());
   /// ```
-  pub fn get(&mut self, key: String) -> Option<String> {
-    self.store.get(&key).cloned()
+  pub fn get(&mut self, _: String) -> Result<Option<String>, String> {
+    panic!("unimplemented");
+    // self.store.get(&key).cloned()
   }
 
   /// Removes a value at a particular key.
@@ -52,7 +60,8 @@ impl KvStore {
   /// store.set("key1".to_owned(), "value1".to_owned());
   /// store.remove("key1".to_owned());
   /// ```
-  pub fn remove(&mut self, key: String) {
-    self.store.remove(&key);
+  pub fn remove(&mut self, _: String) -> Result<String, String> {
+    panic!("unimplemented");
+    // self.store.remove(&key);
   }
 }
