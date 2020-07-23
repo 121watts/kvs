@@ -2,6 +2,9 @@
 //! kvs is a command line key value store
 use std::collections::HashMap;
 use std::path::Path;
+pub use error::*;
+
+pub mod error;
 
 /// KvStore struct definition
 #[derive(Default)]
@@ -22,7 +25,7 @@ impl KvStore {
   }
 
   /// Opens a file for the given path
-  pub fn open(_: &Path) -> Result<KvStore, String> {
+  pub fn open(_: &Path) -> Result<KvStore> {
     panic!("unimplemented");
   }
 
@@ -33,7 +36,7 @@ impl KvStore {
   /// let store = KvStore::new();
   /// store.set("key1".to_owned(), "value1".to_owned());
   /// ```
-  pub fn set(&mut self, _: String, _: String) -> Result<String, String> {
+  pub fn set(&mut self, _: String, _: String) -> Result<String> {
     panic!("unimplemented");
     // self.store.insert(key, value);
   }
@@ -47,7 +50,7 @@ impl KvStore {
   /// store.set("key1".to_owned(), "value1".to_owned());
   /// store.get("key1".to_owned());
   /// ```
-  pub fn get(&mut self, _: String) -> Result<Option<String>, String> {
+  pub fn get(&mut self, _: String) -> Result<Option<String>> {
     panic!("unimplemented");
     // self.store.get(&key).cloned()
   }

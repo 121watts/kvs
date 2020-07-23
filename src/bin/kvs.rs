@@ -2,7 +2,9 @@
 extern crate clap;
 use clap::{load_yaml, App};
 use std::process;
-fn main() {
+use kvs::{Result};
+
+fn main() -> Result<()> {
     let yaml = load_yaml!("cli.yml");
     let config = App::from(yaml)
         .version(crate_version!())
@@ -22,4 +24,6 @@ fn main() {
         eprintln!("unimplemented");
         process::exit(1);
     }
+
+    Ok(())
 }
