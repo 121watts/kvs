@@ -2,9 +2,10 @@
 //! kvs is a command line key value store
 use std::collections::HashMap;
 use std::path::Path;
-pub use error::*;
+use anyhow;
 
-pub mod error;
+/// Result type for the KvStore
+pub type Result<T> = anyhow::Result<T>;
 
 /// KvStore struct definition
 #[derive(Default)]
@@ -63,7 +64,7 @@ impl KvStore {
   /// store.set("key1".to_owned(), "value1".to_owned());
   /// store.remove("key1".to_owned());
   /// ```
-  pub fn remove(&mut self, _: String) -> Result<String, String> {
+  pub fn remove(&mut self, _: String) -> Result<String> {
     panic!("unimplemented");
     // self.store.remove(&key);
   }

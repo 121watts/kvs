@@ -21,8 +21,11 @@ tempfile = "3.0.7"
 walkdir = "2.2.7"
 
 [lib]
+path = "src/lib.rs"
+name = "kvs"
 test = false
 doctest = false
+
 [[bin]]
 name = "kvs"
 test = false
