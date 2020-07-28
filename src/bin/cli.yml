@@ -2,12 +2,6 @@ name: kvs
 about: key value store cli
 settings:
   - ArgRequiredElseHelp
-args:
-  - remove:
-      long: remove
-      short: rm
-      help: Removes the <VALUE> at the provided <KEY>
-      value_name: KEY
 subcommands:
   - get:
       args:
