@@ -2,12 +2,13 @@
 //! kvs is a command line key value store
 use anyhow::anyhow;
 // use std::collections::HashMap;
+use filepath::FilePath;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
-use std::io::BufReader;
-use std::path::Path;
+use std::io::{BufReader, BufWriter, SeekFrom};
+use std::path::{Path, PathBuf};
 
 /// Result type for the KvStore
 pub type Result<T> = anyhow::Result<T>;
@@ -23,6 +24,7 @@ enum Command {
 pub struct KvStore {
   file: File,
   store: HashMap<String, usize>,
+  reader: BufReader<File>,
 }
 
 impl KvStore {
@@ -31,34 +33,41 @@ impl KvStore {
   /// ```
   /// let store = KvStore::new();
   /// ```
-  pub fn new(file: File) -> Self {
+  pub fn new(file: File, reader: BufReader<File>) -> Self {
     let store = HashMap::new();
 
-    KvStore { file, store }
+    KvStore {
+      file,
+      store,
+      reader,
+    }
   }
 
   /// Opens the command log
-  pub fn open(path: &Path) -> Result<KvStore> {
-    let log_file = path.join("commands.log");
+  pub fn open(path: impl Into<PathBuf>) -> Result<KvStore> {
+    let log_file = make_path(&path.into());
+
     let file = OpenOptions::new()
       .read(true)
       .write(true)
       .append(true)
       .create(true)
-      .open(log_file);
+      .open(&log_file);
+
+    let reader = make_reader(&log_file);
 
     match file {
-      Ok(file) => Ok(KvStore::new(file)),
+      Ok(file) => Ok(KvStore::new(file, reader)),
       Err(_) => Err(anyhow!("Could not open file")),
     }
   }
 
   /// Makes the index
-  pub fn make_index(&mut self, path: &Path) {
-    let log_file = path.join("commands.log");
+  pub fn make_index(&mut self) {
+    let path = self.file.path().expect("Could not open file at path");
     let file = OpenOptions::new()
       .read(true)
-      .open(log_file)
+      .open(path)
       .expect("Could not open file");
 
     let reader = BufReader::new(file);
@@ -67,7 +76,6 @@ impl KvStore {
     for line in reader.lines() {
       let line = line.unwrap();
       let command: Command = bincode::deserialize(line.as_bytes()).expect("Could not deserialize");
-      pointer += (line + "\n").len();
 
       match command {
         Command::Set(key, _) => {
@@ -78,6 +86,8 @@ impl KvStore {
         }
         _ => {}
       }
+
+      pointer += (line + "\n").len();
     }
   }
 
@@ -113,11 +123,36 @@ impl KvStore {
   /// store.get("key1".to_owned());
   /// ```
   pub fn get(&mut self, key: String) -> Result<Option<String>> {
+    self.make_index();
     let value = self.store.get(&key);
 
     match value {
-      Some(value) => Ok(Some(value.to_string())),
-      None => Err(anyhow!("Key not found")),
+      Some(value) => {
+        let pointer = *value as u64;
+        self.reader.seek(SeekFrom::Start(pointer))?;
+
+        let mut buf = String::new();
+
+        self.reader.read_line(&mut buf)?;
+        let command: Command = bincode::deserialize(buf.as_bytes()).expect("Could not deserialize");
+
+        println!("key: {:?}", key);
+        println!("buf: {:?}", buf);
+        println!("store: {:?}", self.store);
+
+        match command {
+          Command::Set(_, value) => Ok(Some(value)),
+          _ => {
+            let op: Option<String> = None;
+            Ok(op)
+          }
+        }
+      }
+
+      None => {
+        let op: Option<String> = None;
+        Ok(op)
+      }
     }
   }
 
@@ -148,4 +183,30 @@ impl KvStore {
       None => Err(anyhow!("Key not found")),
     }
   }
+}
+
+// fn make_writer(path: &Path) -> BufWriter<File> {
+//   let log_file = path.join("commands.log");
+//   let file = OpenOptions::new()
+//     .read(true)
+//     .write(true)
+//     .append(true)
+//     .create(true)
+//     .open(log_file)
+//     .expect("Could not open file");
+//
+//   BufWriter::new(file)
+// }
+
+fn make_reader(path: &Path) -> BufReader<File> {
+  let file = OpenOptions::new()
+    .read(true)
+    .open(path)
+    .expect("Could not open file");
+
+  BufReader::new(file)
+}
+
+fn make_path(path: &Path) -> PathBuf {
+  path.join("commands.log")
 }
