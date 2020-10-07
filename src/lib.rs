@@ -2,11 +2,11 @@
 //! kvs is a command line key value store
 use anyhow::anyhow;
 // use std::collections::HashMap;
-use bincode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
+use std::io::BufReader;
 use std::path::Path;
 
 /// Result type for the KvStore
@@ -16,13 +16,13 @@ pub type Result<T> = anyhow::Result<T>;
 enum Command {
   Get(String),
   Set(String, String),
-  Remove(String, String),
+  Remove(String),
 }
 
 /// KvStore struct definition
 pub struct KvStore {
   file: File,
-  store: HashMap<String, String>,
+  store: HashMap<String, usize>,
 }
 
 impl KvStore {
@@ -32,10 +32,9 @@ impl KvStore {
   /// let store = KvStore::new();
   /// ```
   pub fn new(file: File) -> Self {
-    KvStore {
-      file,
-      store: HashMap::new(),
-    }
+    let store = HashMap::new();
+
+    KvStore { file, store }
   }
 
   /// Opens the command log
@@ -48,10 +47,37 @@ impl KvStore {
       .create(true)
       .open(log_file);
 
-    // TODO: store contents in memory
     match file {
       Ok(file) => Ok(KvStore::new(file)),
       Err(_) => Err(anyhow!("Could not open file")),
+    }
+  }
+
+  /// Makes the index
+  pub fn make_index(&mut self, path: &Path) {
+    let log_file = path.join("commands.log");
+    let file = OpenOptions::new()
+      .read(true)
+      .open(log_file)
+      .expect("Could not open file");
+
+    let reader = BufReader::new(file);
+    let mut pointer: usize = 0;
+
+    for line in reader.lines() {
+      let line = line.unwrap();
+      let command: Command = bincode::deserialize(line.as_bytes()).expect("Could not deserialize");
+      pointer += (line + "\n").len();
+
+      match command {
+        Command::Set(key, _) => {
+          self.store.insert(key, pointer);
+        }
+        Command::Remove(key) => {
+          self.store.remove(&key);
+        }
+        _ => {}
+      }
     }
   }
 
@@ -103,11 +129,22 @@ impl KvStore {
   /// store.set("key1".to_owned(), "value1".to_owned());
   /// store.remove("key1".to_owned());
   /// ```
-  pub fn remove(&mut self, key: String) -> Result<String> {
+  pub fn remove(&mut self, key: String) -> Result<()> {
     let value = self.store.remove(&key);
 
     match value {
-      Some(value) => Ok(value.to_string()),
+      Some(_) => {
+        let command = Command::Remove(key);
+        let command = bincode::serialize(&command).unwrap();
+
+        self
+          .file
+          .write_all(&command)
+          .expect("Could not set Remove to log");
+        self.file.write_all(b"\n").expect("Could not set value");
+
+        Ok(())
+      }
       None => Err(anyhow!("Key not found")),
     }
   }

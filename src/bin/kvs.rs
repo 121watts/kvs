@@ -38,6 +38,7 @@ fn get(get_arg: &clap::ArgMatches) {
     let key = get_arg.value_of("key").unwrap();
     let path = env::current_dir().expect("Could not open logs");
     let mut store = KvStore::open(&path).expect("Could not open KvStore");
+    store.make_index(&path);
 
     match store.get(key.to_owned()) {
         Ok(ok) => match ok {
@@ -52,6 +53,7 @@ fn remove(rm_arg: &clap::ArgMatches) {
     let key = rm_arg.value_of("key").unwrap();
     let path = env::current_dir().expect("Could not open logs");
     let mut store = KvStore::open(&path).expect("Could not open KvStore");
+    store.make_index(&path);
 
     match store.remove(key.to_owned()) {
         Ok(key) => println!("Removed value for key: {:?}", key),
