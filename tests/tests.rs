@@ -58,7 +58,7 @@ fn cli_set() {
         .current_dir(&temp_dir)
         .assert()
         .success()
-        .stdout(is_empty());
+        .stdout(contains("Value set:"));
 }
 
 #[test]

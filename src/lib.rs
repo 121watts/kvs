@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
-use std::io::{BufReader, BufWriter, SeekFrom};
+use std::io::{BufReader, SeekFrom};
 use std::path::{Path, PathBuf};
 
 /// Result type for the KvStore
@@ -136,10 +136,6 @@ impl KvStore {
         self.reader.read_line(&mut buf)?;
         let command: Command = bincode::deserialize(buf.as_bytes()).expect("Could not deserialize");
 
-        println!("key: {:?}", key);
-        println!("buf: {:?}", buf);
-        println!("store: {:?}", self.store);
-
         match command {
           Command::Set(_, value) => Ok(Some(value)),
           _ => {
@@ -165,6 +161,7 @@ impl KvStore {
   /// store.remove("key1".to_owned());
   /// ```
   pub fn remove(&mut self, key: String) -> Result<()> {
+    self.make_index();
     let value = self.store.remove(&key);
 
     match value {
@@ -175,8 +172,12 @@ impl KvStore {
         self
           .file
           .write_all(&command)
-          .expect("Could not set Remove to log");
-        self.file.write_all(b"\n").expect("Could not set value");
+          .expect("Could not set Command::Remove to log");
+
+        self
+          .file
+          .write_all(b"\n")
+          .expect("Could not set Command::Remove to log");
 
         Ok(())
       }
